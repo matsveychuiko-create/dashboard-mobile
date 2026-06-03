@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Заказы — Фотобот</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F0F2F8;
+    --surface: #FFFFFF;
+    --surface2: #F7F8FC;
+    --border: #E2E6F0;
+    --accent: #7B61FF;
+    --accent2: #9f8fff;
+    --accent-light: #EDE9FF;
+    --text: #111827;
+    --text2: #374151;
+    --muted: #6B7280;
+    --muted2: #9CA3AF;
+    --green: #059669;
+    --green-light: #D1FAE5;
+    --red: #DC2626;
+    --red-light: #FEE2E2;
+    --orange: #D97706;
+    --orange-light: #FEF3C7;
+    --blue: #2563EB;
+    --blue-light: #DBEAFE;
+    --topbar: #13152A;
+    --nav-h: 64px;
+    --top-h: 56px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Montserrat', sans-serif;
+    min-height: 100vh;
+    padding-bottom: var(--nav-h);
+    overflow-x: hidden;
+  }
+
+  /* ─── TOPBAR ─── */
+  .topbar {
+    background: var(--topbar);
+    height: var(--top-h);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid rgba(123,97,255,0.2);
+  }
+
+  .top-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+  }
+
+  .top-logo-text {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.06em;
+  }
+
+  .top-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .balance-chip {
+    background: linear-gradient(135deg, rgba(123,97,255,0.3), rgba(109,40,217,0.2));
+    border: 1.5px solid rgba(123,97,255,0.6);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #E9D5FF;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 0 10px rgba(123,97,255,0.2);
+  }
+
+  .balance-chip.low {
+    background: linear-gradient(135deg, rgba(220,38,38,0.3), rgba(220,38,38,0.15));
+    border-color: rgba(220,38,38,0.6);
+    color: #FCA5A5;
+    animation: pulse-red 2s infinite;
+  }
+
+  @keyframes pulse-red {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.3); }
+    50% { box-shadow: 0 0 0 5px rgba(220,38,38,0); }
+  }
+
+  .burger-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .burger-btn span {
+    width: 16px;
+    height: 2px;
+    background: rgba(255,255,255,0.8);
+    border-radius: 1px;
+    transition: all 0.3s;
+  }
+
+  .notif-dot {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 8px;
+    height: 8px;
+    background: var(--red);
+    border-radius: 50%;
+    border: 1.5px solid var(--topbar);
+  }
+
+  /* ─── DRAWER MENU ─── */
+  .drawer-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    backdrop-filter: blur(2px);
+  }
+
+  .drawer-overlay.open { opacity: 1; pointer-events: all; }
+
+  .drawer {
+    position: fixed;
+    top: 0;
+    right: -280px;
+    width: 280px;
+    height: 100%;
+    background: #1A1D2E;
+    z-index: 201;
+    transition: right 0.3s cubic-bezier(0.4,0,0.2,1);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow-y: auto;
+  }
+
+  .drawer.open { right: 0; }
+
+  .drawer-header {
+    padding: 20px 16px 16px;
+    background: #13152A;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .drawer-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.08);
+    border: none;
+    color: rgba(255,255,255,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.2rem;
+  }
+
+  .drawer-nav {
+    flex: 1;
+    padding: 12px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .drawer-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    color: rgba(160,168,192,0.8);
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 500;
+    transition: all 0.18s;
+    letter-spacing: 0.03em;
+  }
+
+  .drawer-item:hover, .drawer-item.active {
+    background: rgba(123,97,255,0.15);
+    color: #fff;
+    border: 1px solid rgba(123,97,255,0.2);
+  }
+
+  .drawer-item.active { color: #fff; }
+
+  .d-icon { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.7; }
+  .drawer-item.active .d-icon { opacity: 1; color: var(--accent2); }
+
+  .drawer-badge {
+    margin-left: auto;
+    background: var(--red);
+    color: #fff;
+    border-radius: 10px;
+    padding: 1px 7px;
+    font-size: 0.65rem;
+    font-weight: 700;
+  }
+
+  .drawer-divider {
+    height: 1px;
+    background: rgba(255,255,255,0.06);
+    margin: 8px 10px;
+  }
+
+  .drawer-bottom {
+    padding: 10px;
+  }
+
+  .disk-mini {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 8px;
+  }
+
+  .disk-mini-top {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.68rem;
+    color: rgba(160,168,192,0.7);
+    margin-bottom: 8px;
+  }
+
+  .disk-mini-val { color: #F59E0B; font-weight: 700; }
+
+  .disk-track {
+    height: 4px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .disk-fill {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, var(--red), #F97316);
+    border-radius: 2px;
+  }
+
+  .disk-warn-text {
+    font-size: 0.62rem;
+    color: #F59E0B;
+    margin-top: 5px;
+  }
+
+  .drawer-item.instr {
+    background: rgba(16,185,129,0.1);
+    color: #6EE7B7;
+    border: 1px solid rgba(16,185,129,0.15);
+    margin-bottom: 4px;
+  }
+
+  .drawer-item.logout { color: rgba(255,255,255,0.25); }
+  .drawer-item.logout:active { color: #FCA5A5; }
+
+  /* ─── CONTENT ─── */
+  .content {
+    padding: 16px;
+  }
+
+  /* ─── PAGE HEADER ─── */
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .page-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .page-subtitle {
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-weight: 400;
+    margin-top: 2px;
+  }
+
+  /* ─── STATS ROW ─── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+
+  .stat-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .stat-icon.purple { background: #EDE9FF; color: #7C3AED; }
+  .stat-icon.green { background: #D1FAE5; color: #059669; }
+  .stat-icon.blue { background: #DBEAFE; color: #2563EB; }
+
+  .stat-value {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 0.62rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 3px;
+  }
+
+  .stat-card.balance-low {
+    border-color: #FCA5A5;
+    background: #FFF5F5;
+    animation: pulse-red 2s infinite;
+  }
+
+  .stat-card.balance-low .stat-value { color: var(--red); }
+  .stat-card.balance-low .stat-icon { background: var(--red-light); color: var(--red); }
+
+  .stat-card.disk-high {
+    border-color: #FCA5A5;
+    background: #FFF5F5;
+    animation: pulse-red 2s infinite;
+  }
+
+  .stat-card.disk-high .stat-value { color: var(--red); }
+  .stat-card.disk-high .stat-icon { background: var(--red-light); color: var(--red); }
+
+  .stat-warn {
+    font-size: 0.58rem;
+    color: var(--red);
+    font-weight: 700;
+    margin-top: 2px;
+    display: none;
+  }
+
+  .stat-warn.visible { display: block; }
+
+  /* ─── FILTERS ─── */
+  .filters-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .filters-bar::-webkit-scrollbar { display: none; }
+
+  .filter-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 14px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.18s;
+    flex-shrink: 0;
+  }
+
+  .filter-chip.active {
+    background: var(--accent-light);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .filter-chip-all {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  /* ─── ORDER CARDS ─── */
+  .orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 80px;
+  }
+
+  .order-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    transition: transform 0.15s, box-shadow 0.15s;
+    cursor: pointer;
+  }
+
+  .order-card:active {
+    transform: scale(0.98);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+
+  .order-card-inner {
+    display: flex;
+  }
+
+  .order-stripe {
+    width: 5px;
+    flex-shrink: 0;
+  }
+
+  .stripe-new { background: #3B82F6; }
+  .stripe-shooting { background: #F59E0B; }
+  .stripe-processing { background: #A855F7; }
+  .stripe-approval { background: #10B981; }
+  .stripe-fix { background: #EF4444; }
+  .stripe-done { background: #059669; }
+
+  .order-body {
+    flex: 1;
+    padding: 14px;
+  }
+
+  .order-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .order-id {
+    font-size: 0.65rem;
+    color: var(--muted2);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
+  .order-name {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin-top: 2px;
+  }
+
+  .order-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .status-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .s-new { background: #DBEAFE; color: #1D4ED8; }
+  .s-new .status-dot { background: #3B82F6; }
+  .s-shooting { background: #FEF3C7; color: #92400E; }
+  .s-shooting .status-dot { background: #F59E0B; }
+  .s-processing { background: #F3E8FF; color: #6B21A8; }
+  .s-processing .status-dot { background: #A855F7; }
+  .s-approval { background: #CCFBF1; color: #065F46; }
+  .s-approval .status-dot { background: #10B981; }
+  .s-fix { background: #FEE2E2; color: #991B1B; }
+  .s-fix .status-dot { background: #EF4444; }
+  .s-done { background: #D1FAE5; color: #065F46; }
+  .s-done .status-dot { background: #059669; }
+
+  .order-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  .order-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .info-label {
+    font-size: 0.6rem;
+    color: var(--muted2);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .info-value {
+    font-size: 0.78rem;
+    color: var(--text2);
+    font-weight: 500;
+  }
+
+  .order-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+
+  .order-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .print-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-size: 0.62rem;
+    font-weight: 700;
+  }
+
+  .print-ready { background: #D1FAE5; color: #059669; border: 1px solid #6EE7B7; }
+  .print-rendering { background: #FEF3C7; color: #D97706; border: 1px solid #FCD34D; }
+
+  .urgency-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-size: 0.62rem;
+    font-weight: 700;
+  }
+
+  .urgency-5 { background: #FEE2E2; color: #B91C1C; }
+  .urgency-3 { background: #FEF3C7; color: #92400E; }
+  .urgency-1 { background: #D1FAE5; color: #065F46; }
+
+  .order-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  .action-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--muted2);
+    transition: all 0.18s;
+  }
+
+  .action-btn:active { transform: scale(0.92); }
+  .action-btn.edit:active { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+  .action-btn.del:active { border-color: var(--red); color: var(--red); background: var(--red-light); }
+
+  /* ─── FAB ─── */
+  .fab {
+    position: fixed;
+    bottom: calc(var(--nav-h) + 14px);
+    right: 16px;
+    background: linear-gradient(135deg, #7B61FF, #6D28D9);
+    color: #fff;
+    border: none;
+    border-radius: 28px;
+    padding: 13px 20px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(123,97,255,0.45);
+    z-index: 50;
+    transition: transform 0.2s, box-shadow 0.2s;
+    letter-spacing: 0.02em;
+  }
+
+  .fab:active {
+    transform: scale(0.95);
+    box-shadow: 0 2px 8px rgba(123,97,255,0.3);
+  }
+
+  /* ─── BOTTOM NAV ─── */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--nav-h);
+    background: var(--topbar);
+    border-top: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    align-items: stretch;
+    z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: all 0.18s;
+    position: relative;
+    text-decoration: none;
+  }
+
+  .nav-icon {
+    width: 22px;
+    height: 22px;
+    color: rgba(160,168,192,0.5);
+    transition: color 0.18s;
+  }
+
+  .nav-label {
+    font-size: 0.58rem;
+    font-weight: 500;
+    color: rgba(160,168,192,0.5);
+    letter-spacing: 0.03em;
+    transition: color 0.18s;
+  }
+
+  .nav-item.active .nav-icon { color: var(--accent2); }
+  .nav-item.active .nav-label { color: var(--accent2); font-weight: 600; }
+
+  .nav-item.active::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 28px;
+    height: 2px;
+    background: var(--accent);
+    border-radius: 0 0 2px 2px;
+  }
+
+  .nav-badge {
+    position: absolute;
+    top: 6px;
+    right: calc(50% - 18px);
+    background: var(--red);
+    color: #fff;
+    border-radius: 10px;
+    padding: 1px 5px;
+    font-size: 0.55rem;
+    font-weight: 700;
+    border: 1.5px solid var(--topbar);
+  }
+
+  /* ─── EMPTY STATE ─── */
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--muted);
+  }
+
+  .empty-icon {
+    width: 64px;
+    height: 64px;
+    background: var(--surface);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    border: 1px solid var(--border);
+  }
+
+  /* ─── START LINK ─── */
+  .start-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px;
+    margin-bottom: 14px;
+    background: var(--accent-light);
+    border: 1px solid rgba(123,97,255,0.2);
+    border-radius: 12px;
+    text-decoration: none;
+    color: var(--accent);
+    font-size: 0.78rem;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+
+  .play-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* ─── SECTION TITLE ─── */
+  .section-title {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .section-count {
+    background: var(--accent-light);
+    color: var(--accent);
+    border-radius: 10px;
+    padding: 2px 8px;
+    font-size: 0.62rem;
+    font-weight: 700;
+  }
+
+  /* ─── FILTER SHEET ─── */
+  .sheet-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 300;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  .sheet-overlay.open { opacity: 1; pointer-events: all; }
+
+  .sheet {
+    position: fixed;
+    bottom: -100%;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border-radius: 20px 20px 0 0;
+    z-index: 301;
+    transition: bottom 0.35s cubic-bezier(0.4,0,0.2,1);
+    padding: 0 16px 32px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .sheet.open { bottom: 0; }
+
+  .sheet-handle {
+    width: 36px;
+    height: 4px;
+    background: var(--border2, #C8CEDE);
+    border-radius: 2px;
+    margin: 12px auto 20px;
+  }
+
+  .sheet-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: var(--text);
+  }
+
+  .sheet-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  .sheet-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+  }
+
+  .sheet-input, .sheet-select {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.88rem;
+    outline: none;
+    appearance: none;
+    transition: border-color 0.2s;
+  }
+
+  .sheet-input:focus, .sheet-select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(123,97,255,0.12);
+  }
+
+  .sheet-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+    cursor: pointer;
+  }
+
+  .sheet-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .btn-reset {
+    padding: 13px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .btn-search {
+    padding: 13px;
+    border-radius: 10px;
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(123,97,255,0.35);
+  }
+
+  /* ─── ANIMATIONS ─── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .order-card:nth-child(1) { animation: fadeUp 0.3s ease; }
+  .order-card:nth-child(2) { animation: fadeUp 0.35s ease 0.05s both; }
+  .order-card:nth-child(3) { animation: fadeUp 0.4s ease 0.1s both; }
+  .order-card:nth-child(4) { animation: fadeUp 0.45s ease 0.15s both; }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <a href="#" class="top-logo">
+    <svg width="24" height="21" viewBox="0 0 265 233" fill="none">
+      <path d="M0 0 C0 73.26 0 146.52 0 222 C-6.2 220.62 -28.91 213.46 -96 191 C-96 138.2 -96 85.4 -96 31 C-49.69 15.5 -29.17 8.63 0 0 Z" fill="white" transform="translate(259,6)"/>
+      <path d="M0 0 C0 73.26 0 146.52 0 222 C-10.88 218.24 -48.47 199.37 -64 191 C-64 138.2 -64 85.4 -64 31 C-34.06 15.43 -17.27 6.98 0 0 Z" fill="white" transform="translate(132,6)"/>
+      <path d="M0 0 C0 73.26 0 146.52 0 222 C-14 215 -33 191 -33 191 C-39.09 168.15 -36.93 100.1 -21.74 14.45 C-6.49 0 0 0 0 0 Z" fill="white" transform="translate(37,6)"/>
+    </svg>
+    <span class="top-logo-text">ФОТОБОТ</span>
+  </a>
+  <div class="top-right">
+    <div class="balance-chip low" id="balance-chip">⚠ 1 700 ₽</div>
+    <div class="burger-btn" onclick="openDrawer()">
+      <span></span><span></span><span></span>
+      <div class="notif-dot"></div>
+    </div>
+  </div>
+</header>
+
+<!-- DRAWER OVERLAY -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+
+<!-- DRAWER -->
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <a href="#" class="top-logo">
+      <svg width="22" height="19" viewBox="0 0 265 233" fill="none">
+        <path d="M0 0 C0 73.26 0 146.52 0 222 C-6.2 220.62 -28.91 213.46 -96 191 C-96 85.4 -96 31 -96 31 C-49.69 15.5 0 0 0 0 Z" fill="white" transform="translate(259,6)"/>
+        <path d="M0 0 C0 73.26 0 146.52 0 222 C-10.88 218.24 -64 191 -64 191 C-64 85.4 -64 31 -34.06 15.43 C-17.27 6.98 0 0 0 0 Z" fill="white" transform="translate(132,6)"/>
+        <path d="M0 0 C0 73.26 0 146.52 0 222 C-14 215 -33 191 -39.09 168.15 C-38.36 31.98 -6.49 0 0 0 Z" fill="white" transform="translate(37,6)"/>
+      </svg>
+      <span style="font-family:'Unbounded',sans-serif;font-size:0.82rem;font-weight:700;color:#fff;letter-spacing:0.06em;">ФОТОБОТ</span>
+    </a>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+
+  <nav class="drawer-nav">
+    <a href="#" class="drawer-item active">
+      <svg class="d-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      Заказы
+    </a>
+    <a href="#" class="drawer-item">
+      <svg class="d-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Мои шаблоны
+    </a>
+    <a href="#" class="drawer-item">
+      <svg class="d-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      Библиотека шаблонов
+    </a>
+    <a href="#" class="drawer-item">
+      <svg class="d-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      Альбомы со мной
+    </a>
+    <a href="#" class="drawer-item">
+      <svg class="d-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      Размеры печати
+    </a>
+    <a href="#" class="drawer-item">
+      <svg class="d-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Примеры разворотов
+    </a>
+    <div class="drawer-divider"></div>
+    <a href="#" class="drawer-item">
+      <svg class="d-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Профиль
+    </a>
+    <a href="#" class="drawer-item">
+      <svg class="d-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      Уведомления
+      <span class="drawer-badge">2</span>
+    </a>
+    <a href="#" class="drawer-item">
+      <svg class="d-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+      Корзина
+    </a>
+    <a href="#" class="drawer-item">
+      <svg class="d-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81"/></svg>
+      Приём заказов
+    </a>
+  </nav>
+
+  <div class="drawer-bottom">
+    <div class="disk-mini">
+      <div class="disk-mini-top">
+        <span>Диск</span>
+        <span class="disk-mini-val">60 / 50 GB ⚠</span>
+      </div>
+      <div class="disk-track"><div class="disk-fill"></div></div>
+      <div class="disk-warn-text">Переместите заказы в корзину — 1 ₽/МБ в день</div>
+    </div>
+    <a href="#" class="drawer-item instr">
+      <svg class="d-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+      Инструкция
+    </a>
+    <a href="#" class="drawer-item logout">
+      <svg class="d-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Выход
+    </a>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">ЗАКАЗЫ</h1>
+      <div class="page-subtitle">4 заказа найдено</div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-icon purple">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      </div>
+      <div>
+        <div class="stat-value">4</div>
+        <div class="stat-label">Всего</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </div>
+      <div>
+        <div class="stat-value">0</div>
+        <div class="stat-label">Завершено</div>
+      </div>
+    </div>
+    <div class="stat-card balance-low" id="balance-card">
+      <div class="stat-icon" id="balance-icon" style="background:#FEE2E2;color:#DC2626;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div>
+        <div class="stat-value" style="font-size:0.95rem;">1 700 ₽</div>
+        <div class="stat-label">Баланс</div>
+        <div class="stat-warn visible">⚠ Пополните</div>
+      </div>
+    </div>
+    <div class="stat-card disk-high" id="disk-card">
+      <div class="stat-icon" style="background:#FEE2E2;color:#DC2626;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div>
+        <div class="stat-value" style="font-size:0.85rem;">60<span style="font-size:0.6rem;color:#DC2626;">/50GB</span></div>
+        <div class="stat-label">Диск</div>
+        <div class="stat-warn visible">⚠ В корзину!</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- START LINK -->
+  <a href="#" class="start-link">
+    <div class="play-icon">
+      <svg width="8" height="8" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    </div>
+    С чего начать? Смотреть видеоинструкцию
+  </a>
+
+  <!-- FILTER CHIPS -->
+  <div class="filters-bar">
+    <div class="filter-chip filter-chip-all" onclick="openSheet()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+      Фильтры
+    </div>
+    <div class="filter-chip active">Все статусы</div>
+    <div class="filter-chip">Новый</div>
+    <div class="filter-chip">Съёмка</div>
+    <div class="filter-chip">Утверждение</div>
+    <div class="filter-chip">Исправление</div>
+    <div class="filter-chip">Завершён</div>
+  </div>
+
+  <!-- ORDERS -->
+  <div class="section-title">
+    Заказы
+    <span class="section-count">4</span>
+  </div>
+
+  <div class="orders-list">
+
+    <!-- Заказ 1 -->
+    <div class="order-card">
+      <div class="order-card-inner">
+        <div class="order-stripe stripe-new"></div>
+        <div class="order-body">
+          <div class="order-top">
+            <div>
+              <div class="order-id">#3395</div>
+              <div class="order-name">Matthew Whilson</div>
+            </div>
+            <span class="order-status s-new"><span class="status-dot"></span>Новый</span>
+          </div>
+          <div class="order-info">
+            <div class="order-info-item">
+              <span class="info-label">Год</span>
+              <span class="info-value">2026</span>
+            </div>
+            <div class="order-info-item">
+              <span class="info-label">Класс</span>
+              <span class="info-value">11А</span>
+            </div>
+            <div class="order-info-item">
+              <span class="info-label">Город</span>
+              <span class="info-value">Нижний Новгород</span>
+            </div>
+            <div class="order-info-item">
+              <span class="info-label">Школа</span>
+              <span class="info-value">Школа №1999</span>
+            </div>
+          </div>
+          <div class="order-footer">
+            <div class="order-tags">
+              <span class="print-badge print-ready">✓ К печати</span>
+              <span class="urgency-badge urgency-5">⚡ 5</span>
+            </div>
+            <div class="order-actions">
+              <button class="action-btn edit">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+              <button class="action-btn del">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Заказ 2 -->
+    <div class="order-card">
+      <div class="order-card-inner">
+        <div class="order-stripe stripe-shooting"></div>
+        <div class="order-body">
+          <div class="order-top">
+            <div>
+              <div class="order-id">#3394</div>
+              <div class="order-name">Анна Петрова</div>
+            </div>
+            <span class="order-status s-shooting"><span class="status-dot"></span>Съёмка</span>
+          </div>
+          <div class="order-info">
+            <div class="order-info-item">
+              <span class="info-label">Год</span>
+              <span class="info-value">2026</span>
+            </div>
+            <div class="order-info-item">
+              <span class="info-label">Класс</span>
+              <span class="info-value">9Б</span>
+            </div>
+            <div class="order-info-item">
+              <span class="info-label">Город</span>
+              <span class="info-value">Москва</span>
+            </div>
+            <div class="order-info-item">
+              <span class="info-label">Школа</span>
+              <span class="info-value">Гимназия №5</span>
+            </div>
+          </div>
+          <div class="order-footer">
+            <div class="order-tags">
+              <span class="urgency-badge urgency-3">🔶 3</span>
+            </div>
+            <div class="order-actions">
+              <button class="action-btn edit">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+              <button class="action-btn del">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Заказ 3 -->
+    <div class="order-card">
+      <div class="order-card-inner">
+        <div class="order-stripe stripe-approval"></div>
+        <div class="order-body">
+          <div class="order-top">
+            <div>
+              <div class="order-id">#3390</div>
+              <div class="order-name">Сергей Иванов</div>
+            </div>
+            <span class="order-status s-approval"><span class="status-dot"></span>Утверждение</span>
+          </div>
+          <div class="order-info">
+            <div class="order-info-item">
+              <span class="info-label">Год</span>
+              <span class="info-value">2025</span>
+            </div>
+            <div class="order-info-item">
+              <span class="info-label">Класс</span>
+              <span class="info-value">11В</span>
+            </div>
+            <div class="order-info-item">
+              <span class="info-label">Город</span>
+              <span class="info-value">Санкт-Петербург</span>
+            </div>
+            <div class="order-info-item">
+              <span class="info-label">Школа</span>
+              <span class="info-value">Школа №212</span>
+            </div>
+          </div>
+          <div class="order-footer">
+            <div class="order-tags">
+              <span class="print-badge print-ready">✓ К печати</span>
+              <span class="urgency-badge urgency-1">🟢 1</span>
+            </div>
+            <div class="order-actions">
+              <button class="action-btn edit">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+              <button class="action-btn del">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Заказ 4 -->
+    <div class="order-card">
+      <div class="order-card-inner">
+        <div class="order-stripe stripe-fix"></div>
+        <div class="order-body">
+          <div class="order-top">
+            <div>
+              <div class="order-id">#3388</div>
+              <div class="order-name">Мария Козлова</div>
+            </div>
+            <span class="order-status s-fix"><span class="status-dot"></span>Исправление</span>
+          </div>
+          <div class="order-info">
+            <div class="order-info-item">
+              <span class="info-label">Год</span>
+              <span class="info-value">2025</span>
+            </div>
+            <div class="order-info-item">
+              <span class="info-label">Класс</span>
+              <span class="info-value">10А</span>
+            </div>
+            <div class="order-info-item">
+              <span class="info-label">Город</span>
+              <span class="info-value">Казань</span>
+            </div>
+            <div class="order-info-item">
+              <span class="info-label">Школа</span>
+              <span class="info-value">Лицей №145</span>
+            </div>
+          </div>
+          <div class="order-footer">
+            <div class="order-tags">
+              <span class="print-badge print-rendering">⟳ Рендеринг...</span>
+              <span class="urgency-badge urgency-5">⚡ 5</span>
+            </div>
+            <div class="order-actions">
+              <button class="action-btn edit">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+              <button class="action-btn del">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  Создать заказ
+</button>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <a href="#" class="nav-item active">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+    <span class="nav-label">Заказы</span>
+  </a>
+  <a href="#" class="nav-item">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    <span class="nav-label">Шаблоны</span>
+  </a>
+  <a href="#" class="nav-item">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <span class="nav-label">Профиль</span>
+  </a>
+  <a href="#" class="nav-item">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+    <span class="nav-label">Уведомления</span>
+    <span class="nav-badge">2</span>
+  </a>
+  <a href="#" class="nav-item" onclick="openDrawer()">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+    <span class="nav-label">Ещё</span>
+  </a>
+</nav>
+
+<!-- FILTER SHEET -->
+<div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">Фильтры</div>
+  <div class="sheet-grid">
+    <div>
+      <div class="sheet-label">ID заказа</div>
+      <input type="text" class="sheet-input" placeholder="Введите ID...">
+    </div>
+    <div>
+      <div class="sheet-label">Год выпуска</div>
+      <input type="text" class="sheet-input" placeholder="2025, 2026...">
+    </div>
+    <div>
+      <div class="sheet-label">Город</div>
+      <input type="text" class="sheet-input" placeholder="Введите город...">
+    </div>
+    <div>
+      <div class="sheet-label">Школа / Дет. сад</div>
+      <input type="text" class="sheet-input" placeholder="Название учреждения...">
+    </div>
+    <div>
+      <div class="sheet-label">Статус</div>
+      <select class="sheet-select">
+        <option value="">Все статусы</option>
+        <option>Новый</option>
+        <option>Съёмка</option>
+        <option>Обработка</option>
+        <option>Утверждение</option>
+        <option>Исправление</option>
+        <option>Завершён</option>
+      </select>
+    </div>
+    <div>
+      <div class="sheet-label">Срочность</div>
+      <select class="sheet-select">
+        <option value="">Любая</option>
+        <option>1</option>
+        <option>2</option>
+        <option>3</option>
+        <option>4</option>
+        <option>5</option>
+      </select>
+    </div>
+  </div>
+  <div class="sheet-actions">
+    <button class="btn-reset" onclick="closeSheet()">Сбросить</button>
+    <button class="btn-search" onclick="closeSheet()">Поиск</button>
+  </div>
+</div>
+
+<script>
+  function openDrawer() {
+    document.getElementById('drawer').classList.add('open');
+    document.getElementById('drawer-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeDrawer() {
+    document.getElementById('drawer').classList.remove('open');
+    document.getElementById('drawer-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function openSheet() {
+    document.getElementById('sheet').classList.add('open');
+    document.getElementById('sheet-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeSheet() {
+    document.getElementById('sheet').classList.remove('open');
+    document.getElementById('sheet-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  // Filter chips
+  document.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.addEventListener('click', function() {
+      if (this.classList.contains('filter-chip-all')) return;
+      document.querySelectorAll('.filter-chip:not(.filter-chip-all)').forEach(c => c.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>
